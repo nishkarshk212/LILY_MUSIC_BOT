@@ -1,0 +1,28 @@
+
+import config
+from pytgcalls import PyTgCalls
+from pytgcalls.types import MediaStream, AudioQuality
+from pyrogram import Client
+from userbot import user
+
+app = Client(
+    config.SESSION,
+    api_id=config.API_ID,
+    api_hash=config.API_HASH,
+    bot_token=config.BOT_TOKEN
+)
+
+# Use user client for PyTgCalls to allow group calls
+call = PyTgCalls(user)
+
+async def start_stream(chat_id, stream):
+    await call.play(
+        chat_id,
+        MediaStream(stream, audio_parameters=AudioQuality.HIGH),
+    )
+
+async def change_stream(chat_id, stream):
+    await call.change_stream(
+        chat_id,
+        MediaStream(stream, audio_parameters=AudioQuality.HIGH),
+    )

@@ -1,0 +1,15 @@
+__pycache__/
+.pytest_cache/
+.DS_Store
+.venv/
+env/
+.env
+bot.log
+music_thumb.png
+ultra_music_bot_session
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.log
