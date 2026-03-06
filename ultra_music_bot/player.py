@@ -2,26 +2,29 @@
 import config
 from pyrogram import Client
 from userbot import user
+_ENGINE = None
 _PTG_V3 = False
-_ENGINE_AVAILABLE = False
 try:
     from tgcalls import GroupCallFactory
     from tgcalls.types import StreamType
     from tgcalls.types.input_stream import AudioPiped
+    _ENGINE = "tgcalls"
     _PTG_V3 = True
-    _ENGINE_AVAILABLE = True
 except Exception:
     try:
-        from pytgcalls import GroupCallFactory
+        from pytgcalls import GroupCallFactory  # v3 style
         from pytgcalls.types import StreamType
         from pytgcalls.types.input_stream import AudioPiped
+        _ENGINE = "pytgcalls_v3"
         _PTG_V3 = True
-        _ENGINE_AVAILABLE = True
     except Exception:
-        from pytgcalls import PyTgCalls
-        from pytgcalls.types import MediaStream, AudioQuality
-        _PTG_V3 = False
-        _ENGINE_AVAILABLE = True
+        try:
+            from pytgcalls import PyTgCalls  # v2 style
+            from pytgcalls.types import MediaStream, AudioQuality
+            _ENGINE = "pytgcalls_v2"
+            _PTG_V3 = False
+        except Exception:
+            _ENGINE = None
 
 app = Client(
     config.SESSION,
@@ -31,7 +34,7 @@ app = Client(
 )
 
 # Use user client for PyTgCalls to allow group calls
-if _PTG_V3:
+if _ENGINE == "tgcalls" or _ENGINE == "pytgcalls_v3":
     class CallAdapter:
         def __init__(self, client):
             self.client = client
@@ -65,7 +68,7 @@ if _PTG_V3:
         async def get_active_chats(self):
             return list(self.calls.keys())
     call = CallAdapter(user)
-else:
+elif _ENGINE == "pytgcalls_v2":
     class CallAdapterV2:
         def __init__(self, client):
             self.impl = PyTgCalls(client)
@@ -87,7 +90,7 @@ else:
             return await self.impl.get_active_chats()
     call = CallAdapterV2(user)
 
-if not _ENGINE_AVAILABLE:
+if _ENGINE is None:
     class DummyCall:
         def start(self): return None
         def stop(self): return None
@@ -100,17 +103,17 @@ if not _ENGINE_AVAILABLE:
     call = DummyCall()
 
 async def start_stream(chat_id, stream):
-    if _PTG_V3:
+    if _ENGINE == "tgcalls" or _ENGINE == "pytgcalls_v3":
         await call.play(chat_id, stream)
-    elif _ENGINE_AVAILABLE:
+    elif _ENGINE == "pytgcalls_v2":
         await call.play(chat_id, MediaStream(stream, audio_parameters=AudioQuality.HIGH))
     else:
         return None
 
 async def change_stream(chat_id, stream):
-    if _PTG_V3:
+    if _ENGINE == "tgcalls" or _ENGINE == "pytgcalls_v3":
         await call.change_stream(chat_id, stream)
-    elif _ENGINE_AVAILABLE:
+    elif _ENGINE == "pytgcalls_v2":
         await call.change_stream(chat_id, MediaStream(stream, audio_parameters=AudioQuality.HIGH))
     else:
         return None
