@@ -7,7 +7,9 @@ import yt_dlp
 import asyncio
 import logging
 from promo import start_promo_scheduler
+import requests
 
+import config
 from player import app, call, start_stream, change_stream, user
 from queues import add_to_queue, get_next_song, get_queue, clear_queue as clear_queue_db
 from utils.thumbnail import generate_thumb
@@ -206,14 +208,59 @@ async def play(client, message):
     channel = video.get("channel", {}).get("name", "Unknown Artist")
     views = video.get("viewCount", {}).get("short", "N/A Views")
 
-    ydl_opts = {
-        "format": "bestaudio",
-        "quiet": True
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        stream = info["url"]
+    def _extract_stream(u):
+        clients = [
+            ({"youtube": {"player_client": ["web"]}}, {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"}),
+            ({"youtube": {"player_client": ["mweb"]}}, {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1"}),
+            ({"youtube": {"player_client": ["android"]}}, {"User-Agent": "Mozilla/5.0 (Linux; Android 12; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Mobile Safari/537.36"})
+        ]
+        for extractor_args, headers in clients:
+            try:
+                ydl_opts = {
+                    "format": "bestaudio/best",
+                    "quiet": True,
+                    "noplaylist": True,
+                    "extractor_args": extractor_args,
+                    "http_headers": headers,
+                    "geo_bypass": True
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(u, download=False)
+                    s = info.get("url")
+                    if not s:
+                        fmts = info.get("formats") or []
+                        af = [f for f in fmts if f.get("url") and (f.get("vcodec") == "none") and (f.get("acodec") and f.get("acodec") != "none")]
+                        if not af:
+                            af = [f for f in fmts if f.get("url") and (f.get("asr") or f.get("abr"))]
+                        if af:
+                            af.sort(key=lambda f: f.get("abr") or 0, reverse=True)
+                            s = af[0]["url"]
+                    if s:
+                        return s
+            except Exception:
+                pass
+        return None
+        
+    stream = _extract_stream(url)
+    if not stream:
+        try:
+            vid = None
+            if "watch?v=" in url:
+                vid = url.split("watch?v=")[-1].split("&")[0]
+            elif "youtu.be/" in url:
+                vid = url.split("youtu.be/")[-1].split("?")[0]
+            if vid:
+                resp = requests.get(f"https://piped.video/api/v1/streams/{vid}", timeout=10)
+                if resp.ok:
+                    data = resp.json()
+                    audios = data.get("audioStreams") or []
+                    if audios:
+                        audios.sort(key=lambda a: a.get("bitrate") or 0, reverse=True)
+                        stream = audios[0].get("url")
+        except Exception:
+            stream = None
+    if not stream:
+        return await message.reply("Unable to fetch audio for this video")
         
     song = {
         "title": title,
@@ -460,7 +507,8 @@ async def controls(client, query):
 
 if __name__ == "__main__":
     app.start()
-    user.start()
+    if config.USERBOT_ENABLED:
+        user.start()
     call.start()
     try:
         for ch in LOG_CHANNELS:
@@ -476,5 +524,6 @@ if __name__ == "__main__":
     print("Music Bot Started")
     idle()
     call.stop()
-    user.stop()
+    if config.USERBOT_ENABLED:
+        user.stop()
     app.stop()

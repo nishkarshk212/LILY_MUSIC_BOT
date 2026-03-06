@@ -65,7 +65,7 @@ if _ENGINE == "pytgcalls_v3" or _ENGINE == "tgcalls":
                     self.calls.pop(chat_id, None)
         async def get_active_chats(self):
             return list(self.calls.keys())
-    call = CallAdapter(user)
+    call = CallAdapter(user if config.USERBOT_ENABLED else app)
 elif _ENGINE == "pytgcalls_v2":
     class CallAdapterV2:
         def __init__(self, client):
