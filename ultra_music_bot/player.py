@@ -5,21 +5,19 @@ from userbot import user
 _ENGINE = None
 _PTG_V3 = False
 try:
-    from tgcalls import GroupCallFactory
-    from tgcalls.types import StreamType
-    from tgcalls.types.input_stream import AudioPiped
-    _ENGINE = "tgcalls"
+    from pytgcalls.group_call_factory import GroupCallFactory
+    from pytgcalls.implementation.input_stream import AudioPiped
+    _ENGINE = "pytgcalls_v3"
     _PTG_V3 = True
 except Exception:
     try:
-        from pytgcalls import GroupCallFactory  # v3 style
-        from pytgcalls.types import StreamType
-        from pytgcalls.types.input_stream import AudioPiped
-        _ENGINE = "pytgcalls_v3"
+        from tgcalls import GroupCallFactory
+        # AudioPiped may be unavailable in tgcalls python binding; prefer pytgcalls path above.
+        _ENGINE = "tgcalls"
         _PTG_V3 = True
     except Exception:
         try:
-            from pytgcalls import PyTgCalls  # v2 style
+            from pytgcalls import PyTgCalls
             from pytgcalls.types import MediaStream, AudioQuality
             _ENGINE = "pytgcalls_v2"
             _PTG_V3 = False
@@ -34,7 +32,7 @@ app = Client(
 )
 
 # Use user client for PyTgCalls to allow group calls
-if _ENGINE == "tgcalls" or _ENGINE == "pytgcalls_v3":
+if _ENGINE == "pytgcalls_v3" or _ENGINE == "tgcalls":
     class CallAdapter:
         def __init__(self, client):
             self.client = client
@@ -47,7 +45,7 @@ if _ENGINE == "tgcalls" or _ENGINE == "pytgcalls_v3":
         async def play(self, chat_id, stream_url):
             if chat_id not in self.calls:
                 self.calls[chat_id] = self.factory.get_group_call()
-                await self.calls[chat_id].join(chat_id, AudioPiped(stream_url), stream_type=StreamType().local_stream)
+                await self.calls[chat_id].join(chat_id, AudioPiped(stream_url))
             else:
                 await self.calls[chat_id].change_stream(AudioPiped(stream_url))
         async def change_stream(self, chat_id, stream_url):
