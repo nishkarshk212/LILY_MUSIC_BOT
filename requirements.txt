@@ -1,5 +1,5 @@
 pyrogram>=2.0.106
-pytgcalls==2.2.11
+pytgcalls==2.1.0
 yt-dlp>=2024.12.31
 python-dotenv>=1.0.1
 youtube-search-python>=1.6.6
