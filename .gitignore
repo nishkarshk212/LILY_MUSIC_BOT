@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 env/
 .env
+**/.env
 bot.log
 music_thumb.png
 ultra_music_bot_session
