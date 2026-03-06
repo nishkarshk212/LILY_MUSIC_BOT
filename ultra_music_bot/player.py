@@ -4,14 +4,20 @@ from pyrogram import Client
 from userbot import user
 _PTG_V3 = False
 try:
-    from pytgcalls import GroupCallFactory
-    from pytgcalls.types import StreamType
-    from pytgcalls.types.input_stream import AudioPiped
+    from tgcalls import GroupCallFactory
+    from tgcalls.types import StreamType
+    from tgcalls.types.input_stream import AudioPiped
     _PTG_V3 = True
 except Exception:
-    from pytgcalls import PyTgCalls
-    from pytgcalls.types import MediaStream, AudioQuality
-    _PTG_V3 = False
+    try:
+        from pytgcalls import GroupCallFactory
+        from pytgcalls.types import StreamType
+        from pytgcalls.types.input_stream import AudioPiped
+        _PTG_V3 = True
+    except Exception:
+        from pytgcalls import PyTgCalls
+        from pytgcalls.types import MediaStream, AudioQuality
+        _PTG_V3 = False
 
 app = Client(
     config.SESSION,
