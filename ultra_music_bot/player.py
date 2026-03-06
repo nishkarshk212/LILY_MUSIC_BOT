@@ -1,9 +1,20 @@
 
 import config
-from pytgcalls import PyTgCalls
-from pytgcalls.types import MediaStream, AudioQuality
 from pyrogram import Client
 from userbot import user
+try:
+    from pytgcalls import PyTgCalls
+    from pytgcalls.types import MediaStream, AudioQuality
+    _PTG_V3 = False
+except Exception:
+    try:
+        from pytgcalls import GroupCall as PyTgCalls
+        from pytgcalls.types import MediaStream, AudioQuality
+        _PTG_V3 = True
+    except Exception:
+        from pytgcalls import PyTgCalls
+        from pytgcalls.types import MediaStream, AudioQuality
+        _PTG_V3 = False
 
 app = Client(
     config.SESSION,
