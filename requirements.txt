@@ -1,0 +1,7 @@
+pyrogram>=2.0.106
+pytgcalls>=2.2.11
+yt-dlp>=2024.12.31
+python-dotenv>=1.0.1
+youtubesearchpython>=1.6.6
+pillow>=10.0.0
+requests>=2.31.0
